@@ -102,11 +102,8 @@ async def send_news_preview(bot):
             reply_markup=reply_markup,
             parse_mode="HTML"
         )
-
-        # Сохраняем текст черновика в память
         DRAFTS[msg.message_id] = formatted_summary
         logger.info("Черновик успешно отправлен админу ✅")
-
     except Exception as e:
         logger.error(f"Ошибка при отправке админу: {e}")
 
@@ -131,7 +128,6 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text="✅ Публикация одобрена. Отправляю в канал...")
 
         try:
-            # Берём оригинальный форматированный текст
             formatted_text = DRAFTS.get(msg_id)
             if not formatted_text:
                 logger.warning("⚠️ Не найден черновик для публикации.")
@@ -142,10 +138,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=formatted_text,
                 parse_mode="HTML"
             )
-
             await context.bot.send_message(chat_id=ADMIN_USER_ID, text="✅ Пост опубликован в канале.")
             logger.info("🎯 Публикация успешно отправлена в канал.")
-
         except Exception as e:
             logger.error(f"❌ Ошибка публикации в канал: {e}")
             await context.bot.send_message(chat_id=ADMIN_USER_ID, text=f"⚠️ Ошибка публикации: {e}")
@@ -153,36 +147,6 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "reject":
         logger.info("❌ Админ отклонил публикацию")
         await query.edit_message_text(text="❌ Публикация отклонена.")
-
-# -----------------------------------------
-# 🚀 ЗАПУСК БОТА
-# -----------------------------------------
-async def start_bot():
-    async def error_handler(update, context):
-    logger.error(f"⚠️ Ошибка: {context.error}")
-    try:
-        if ADMIN_USER_ID:
-            await context.bot.send_message(
-                chat_id=ADMIN_USER_ID,
-                text=f"⚠️ Ошибка в боте:\n{context.error}"
-            )
-    except Exception as e:
-        logger.error(f"Не удалось уведомить администратора: {e}")
-    logger.info("Запуск Telegram-бота...")
-    application = Application.builder().token(BOT_TOKEN).build()
-
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("preview", preview))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_error_handler(error_handler)
-    await application.run_polling()
-
-    
-
-    logger.info("Бот запущен. Начинаю polling и background tasks.")
-    asyncio.create_task(schedule_task(application))
-
-    await application.run_polling()
 
 # -----------------------------------------
 # 🛠️ ОБРАБОТЧИК ОШИБОК
@@ -198,8 +162,21 @@ async def error_handler(update, context):
     except Exception as e:
         logger.error(f"❌ Не удалось уведомить администратора: {e}")
 
-# Регистрируем обработчик ошибок
-application.add_error_handler(error_handler)
+# -----------------------------------------
+# 🚀 ЗАПУСК БОТА
+# -----------------------------------------
+async def start_bot():
+    logger.info("Запуск Telegram-бота...")
+    application = Application.builder().token(BOT_TOKEN).build()
+
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("preview", preview))
+    application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_error_handler(error_handler)
+
+    logger.info("Бот запущен. Начинаю polling и background tasks.")
+    asyncio.create_task(schedule_task(application))
+    await application.run_polling()
 
 # -----------------------------------------
 # ▶️ ОСНОВНОЙ ВХОД
@@ -207,6 +184,4 @@ application.add_error_handler(error_handler)
 if __name__ == "__main__":
     import nest_asyncio
     nest_asyncio.apply()
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_bot())
+    asyncio.run(start_bot())

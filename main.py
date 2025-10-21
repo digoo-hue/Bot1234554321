@@ -158,12 +158,23 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 🚀 ЗАПУСК БОТА
 # -----------------------------------------
 async def start_bot():
+    async def error_handler(update, context):
+    logger.error(f"⚠️ Ошибка: {context.error}")
+    try:
+        if ADMIN_USER_ID:
+            await context.bot.send_message(
+                chat_id=ADMIN_USER_ID,
+                text=f"⚠️ Ошибка в боте:\n{context.error}"
+            )
+    except Exception as e:
+        logger.error(f"Не удалось уведомить администратора: {e}")
     logger.info("Запуск Telegram-бота...")
     application = Application.builder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("preview", preview))
     application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_error_handler(error_handler)
 
     logger.info("Бот запущен. Начинаю polling и background tasks.")
     asyncio.create_task(schedule_task(application))

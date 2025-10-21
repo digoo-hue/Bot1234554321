@@ -175,11 +175,31 @@ async def start_bot():
     application.add_handler(CommandHandler("preview", preview))
     application.add_handler(CallbackQueryHandler(button_callback))
     application.add_error_handler(error_handler)
+    await application.run_polling()
+
+    
 
     logger.info("Бот запущен. Начинаю polling и background tasks.")
     asyncio.create_task(schedule_task(application))
 
     await application.run_polling()
+
+# -----------------------------------------
+# 🛠️ ОБРАБОТЧИК ОШИБОК
+# -----------------------------------------
+async def error_handler(update, context):
+    logger.error(f"⚠️ Ошибка: {context.error}")
+    try:
+        if ADMIN_USER_ID:
+            await context.bot.send_message(
+                chat_id=ADMIN_USER_ID,
+                text=f"⚠️ Ошибка в боте:\n{context.error}"
+            )
+    except Exception as e:
+        logger.error(f"❌ Не удалось уведомить администратора: {e}")
+
+# Регистрируем обработчик ошибок
+application.add_error_handler(error_handler)
 
 # -----------------------------------------
 # ▶️ ОСНОВНОЙ ВХОД

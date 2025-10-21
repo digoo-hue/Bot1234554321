@@ -1,0 +1,7 @@
+python-telegram-bot==21.4
+telethon==1.34.0
+httpx==0.27.2
+openai==1.50.2
+nest_asyncio==1.6.0
+pytz==2024.2
+python-dotenv==1.0.1
